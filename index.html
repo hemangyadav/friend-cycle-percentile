@@ -15,10 +15,6 @@
       --accent: #135ea8;
       --accent-dark: #0d477f;
       --accent-soft: #eaf3fc;
-      --good-bg: #eaf7ef;
-      --good-border: #98d0aa;
-      --warn-bg: #fff6df;
-      --warn-border: #e8c96f;
       --caution-bg: #fff0ef;
       --caution-border: #e6a7a2;
       --shadow: 0 14px 36px rgba(28, 48, 75, 0.10);
@@ -49,13 +45,6 @@
       font-size: clamp(1.9rem, 4vw, 2.8rem);
       line-height: 1.1;
       letter-spacing: -0.035em;
-    }
-
-    .subtitle {
-      margin: 0;
-      color: var(--muted);
-      font-size: 1.03rem;
-      max-width: 760px;
     }
 
     .card {
@@ -228,7 +217,6 @@
     }
 
     .calculation-box,
-    .effort-box,
     .age-caution {
       margin-top: 12px;
       padding: 13px 14px;
@@ -241,17 +229,6 @@
       border: 1px solid var(--border);
     }
 
-    .effort-good {
-      background: var(--good-bg);
-      border: 1px solid var(--good-border);
-    }
-
-    .effort-mid {
-      background: var(--warn-bg);
-      border: 1px solid var(--warn-border);
-    }
-
-    .effort-low,
     .age-caution {
       background: var(--caution-bg);
       border: 1px solid var(--caution-border);
@@ -318,7 +295,6 @@
   <main class="page-shell">
     <header class="hero">
       <h1>FRIEND Cycle VO₂ Percentile Calculator</h1>
-      <p class="subtitle">A browser-based calculator for adults aged 20–89 years using the 2022 U.S. FRIEND cycle-ergometer reference standards.</p>
     </header>
 
     <section class="card" aria-labelledby="calculator-heading">
@@ -382,7 +358,6 @@
         </div>
 
         <div id="calculation-box" class="calculation-box"></div>
-        <div id="effort-box" class="effort-box"></div>
         <div id="age-caution" class="age-caution" style="display:none"></div>
 
         <div class="report-box">
@@ -395,9 +370,7 @@
 
       <footer class="method-note">
         <p><strong>Method:</strong> the calculator uses the published age-decade, sex-specific cycle-ergometer values from Table 3. Between the 10th and 90th percentile thresholds, it estimates a percentile by linear interpolation between adjacent deciles. It reports values outside those bounds as below the 10th or above the 90th percentile rather than extrapolating.</p>
-        <p><strong>RER behavior:</strong> peak RER is used as an effort-quality flag. It does not switch the calculator to a different normative table at RER 1.10, avoiding a reference change caused solely by crossing that threshold.</p>
         <p><strong>Reference:</strong> Kaminsky LA, Arena R, Myers J, et al. Updated Reference Standards for Cardiorespiratory Fitness Measured with Cardiopulmonary Exercise Testing: Data from FRIEND. <em>Mayo Clinic Proceedings</em>. 2022;97(2):285–293. <a href="https://doi.org/10.1016/j.mayocp.2021.08.020" target="_blank" rel="noopener noreferrer">DOI: 10.1016/j.mayocp.2021.08.020</a>.</p>
-        <p><strong>Limitations:</strong> this is a reference calculator, not a determination that a test was maximal and not a diagnosis. The FRIEND cohort consisted of apparently healthy U.S. adults. Interpret the percentile with the full CPET pattern and clinical context.</p>
       </footer>
     </section>
   </main>
@@ -437,7 +410,6 @@
     const resultSubtitle = document.getElementById("result-subtitle");
     const detailGroup = document.getElementById("detail-group");
     const calculationBox = document.getElementById("calculation-box");
-    const effortBox = document.getElementById("effort-box");
     const ageCaution = document.getElementById("age-caution");
     const reportSentence = document.getElementById("report-sentence");
     const copyButton = document.getElementById("copy-button");
@@ -515,27 +487,6 @@
       };
     }
 
-    function effortInterpretation(rer) {
-      if (rer < 1.0) {
-        return {
-          className: "effort-low",
-          text: `Peak RER was ${rer.toFixed(2)}, below the FRIEND reference cohort inclusion criterion of 1.00. The percentile is descriptive and may underestimate maximal cardiorespiratory fitness if effort was submaximal.`
-        };
-      }
-
-      if (rer < 1.1) {
-        return {
-          className: "effort-mid",
-          text: `Peak RER was ${rer.toFixed(2)} and meets the FRIEND ≥1.00 effort inclusion criterion. The calculator uses the RER ≥1.0 reference table.`
-        };
-      }
-
-      return {
-        className: "effort-good",
-        text: `Peak RER was ${rer.toFixed(2)} and meets both commonly reported RER thresholds (≥1.00 and ≥1.10). The calculator still uses the fixed RER ≥1.0 reference table for consistency.`
-      };
-    }
-
     function validateInputs(age, sex, vo2, rer) {
       if (!Number.isInteger(age) || age < 20 || age > 89) {
         return "Enter age as a whole number from 20 through 89 years.";
@@ -573,16 +524,12 @@
       const ageGroup = getAgeGroup(age);
       const thresholds = FRIEND_CYCLE[sex][ageGroup];
       const percentileResult = interpolatePercentile(vo2, thresholds);
-      const effort = effortInterpretation(rer);
       const sexNoun = sex === "female" ? "woman" : "man";
 
       resultHeading.textContent = percentileResult.display;
       resultSubtitle.textContent = `Peak VO₂ ${vo2.toFixed(1)} mL/kg/min for a ${age}-year-old ${sexNoun}.`;
       detailGroup.textContent = `${sex === "female" ? "Women" : "Men"}, age ${ageGroup}`;
       calculationBox.textContent = percentileResult.details;
-
-      effortBox.className = `effort-box ${effort.className}`;
-      effortBox.textContent = effort.text;
 
       if (age >= 80) {
         ageCaution.style.display = "block";
@@ -592,7 +539,7 @@
         ageCaution.textContent = "";
       }
 
-      let sentence = `By 2022 FRIEND cycle-ergometer norms (RER ≥1.0 reference cohort), peak VO₂ corresponds to ${percentileResult.reportText} for age and sex.`;
+      let sentence = `By 2022 FRIEND cycle-ergometer norms, peak VO₂ corresponds to ${percentileResult.reportText} for age and sex.`;
       if (rer < 1.0) {
         sentence += ` Interpret cautiously because peak RER was ${rer.toFixed(2)}.`;
       }
