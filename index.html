@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Cycle-ergometer peak VO2 percentile calculator using 2022 FRIEND reference standards.">
+  <title>FRIEND Cycle VO₂ Percentile Calculator</title>
+  <style>
+    :root {
+      --page: #f4f7fb;
+      --card: #ffffff;
+      --ink: #182230;
+      --muted: #5f6b7a;
+      --border: #d8e0ea;
+      --accent: #135ea8;
+      --accent-dark: #0d477f;
+      --accent-soft: #eaf3fc;
+      --good-bg: #eaf7ef;
+      --good-border: #98d0aa;
+      --warn-bg: #fff6df;
+      --warn-border: #e8c96f;
+      --caution-bg: #fff0ef;
+      --caution-border: #e6a7a2;
+      --shadow: 0 14px 36px rgba(28, 48, 75, 0.10);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--page);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+    }
+
+    .page-shell {
+      width: min(920px, calc(100% - 32px));
+      margin: 40px auto;
+    }
+
+    .hero {
+      margin-bottom: 22px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.9rem, 4vw, 2.8rem);
+      line-height: 1.1;
+      letter-spacing: -0.035em;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.03rem;
+      max-width: 760px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: clamp(22px, 4vw, 34px);
+    }
+
+    .privacy-note {
+      margin: 0 0 24px;
+      padding: 12px 14px;
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      border-radius: 8px;
+      color: #24496c;
+      font-size: 0.95rem;
+    }
+
+    form {
+      display: grid;
+      gap: 18px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+    }
+
+    label {
+      font-weight: 700;
+      font-size: 0.96rem;
+    }
+
+    .helper {
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 400;
+    }
+
+    input,
+    select,
+    button {
+      font: inherit;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 48px;
+      padding: 10px 12px;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid #bac6d4;
+      border-radius: 10px;
+      outline: none;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(19, 94, 168, 0.14);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 2px;
+    }
+
+    button {
+      min-height: 46px;
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .primary {
+      color: #fff;
+      background: var(--accent);
+    }
+
+    .primary:hover { background: var(--accent-dark); }
+
+    .secondary {
+      color: var(--ink);
+      background: #fff;
+      border-color: #bac6d4;
+    }
+
+    .secondary:hover { background: #f5f7fa; }
+
+    .error {
+      display: none;
+      margin: 0;
+      padding: 12px 14px;
+      color: #7a1d17;
+      background: var(--caution-bg);
+      border: 1px solid var(--caution-border);
+      border-radius: 10px;
+      font-weight: 650;
+    }
+
+    .result {
+      display: none;
+      margin-top: 28px;
+      padding-top: 28px;
+      border-top: 1px solid var(--border);
+    }
+
+    .result-kicker {
+      margin: 0 0 2px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .result-main {
+      margin: 0;
+      color: var(--accent-dark);
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      line-height: 1.15;
+      letter-spacing: -0.025em;
+    }
+
+    .result-subtitle {
+      margin: 8px 0 20px;
+      color: var(--muted);
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .detail {
+      padding: 12px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .detail-label {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .detail-value {
+      font-weight: 750;
+    }
+
+    .calculation-box,
+    .effort-box,
+    .age-caution {
+      margin-top: 12px;
+      padding: 13px 14px;
+      border-radius: 10px;
+      font-size: 0.94rem;
+    }
+
+    .calculation-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+    }
+
+    .effort-good {
+      background: var(--good-bg);
+      border: 1px solid var(--good-border);
+    }
+
+    .effort-mid {
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-border);
+    }
+
+    .effort-low,
+    .age-caution {
+      background: var(--caution-bg);
+      border: 1px solid var(--caution-border);
+    }
+
+    .report-box {
+      margin-top: 18px;
+      padding: 16px;
+      background: var(--accent-soft);
+      border: 1px solid #bfd7ef;
+      border-radius: 12px;
+    }
+
+    .report-box h2 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+
+    .report-sentence {
+      margin: 0 0 12px;
+    }
+
+    .copy-status {
+      margin-left: 10px;
+      color: var(--accent-dark);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .method-note {
+      margin-top: 26px;
+      padding-top: 22px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .method-note p {
+      margin: 8px 0;
+    }
+
+    .method-note a {
+      color: var(--accent-dark);
+    }
+
+    code {
+      padding: 0.08em 0.3em;
+      background: #edf1f5;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.92em;
+    }
+
+    @media (max-width: 680px) {
+      .page-shell { margin: 24px auto; }
+      .form-grid,
+      .detail-grid { grid-template-columns: 1fr; }
+      .card { border-radius: 14px; }
+      .actions button { flex: 1 1 150px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page-shell">
+    <header class="hero">
+      <h1>FRIEND Cycle VO₂ Percentile Calculator</h1>
+      <p class="subtitle">A browser-based calculator for adults aged 20–89 years using the 2022 U.S. FRIEND cycle-ergometer reference standards.</p>
+    </header>
+
+    <section class="card" aria-labelledby="calculator-heading">
+      <p class="privacy-note"><strong>Privacy:</strong> enter only age, sex, peak VO₂, and peak RER. Do not enter a name, date of birth, medical record number, or other identifier. This page performs the calculation locally in the browser and does not store the values.</p>
+
+      <h2 id="calculator-heading" style="margin-top:0">Enter CPET values</h2>
+
+      <form id="calculator-form" novalidate>
+        <div class="form-grid">
+          <div class="field">
+            <label for="age">Age <span class="helper">whole years, 20–89</span></label>
+            <input id="age" name="age" type="number" min="20" max="89" step="1" inputmode="numeric" placeholder="58" required>
+          </div>
+
+          <div class="field">
+            <label for="sex">Sex <span class="helper">as defined in the reference table</span></label>
+            <select id="sex" name="sex" required>
+              <option value="">Select</option>
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="vo2">Peak VO₂ <span class="helper">mL/kg/min</span></label>
+            <input id="vo2" name="vo2" type="number" min="0.1" max="100" step="0.1" inputmode="decimal" placeholder="15.5" required>
+          </div>
+
+          <div class="field">
+            <label for="rer">Peak RER <span class="helper">for effort context</span></label>
+            <input id="rer" name="rer" type="number" min="0.50" max="2.00" step="0.01" inputmode="decimal" placeholder="1.15" required>
+          </div>
+        </div>
+
+        <p id="error-message" class="error" role="alert"></p>
+
+        <div class="actions">
+          <button class="primary" type="submit">Calculate percentile</button>
+          <button class="secondary" type="reset">Clear</button>
+        </div>
+      </form>
+
+      <section id="result" class="result" aria-live="polite" aria-labelledby="result-heading">
+        <p class="result-kicker">Result</p>
+        <h2 id="result-heading" class="result-main"></h2>
+        <p id="result-subtitle" class="result-subtitle"></p>
+
+        <div class="detail-grid">
+          <div class="detail">
+            <span class="detail-label">Reference group</span>
+            <span id="detail-group" class="detail-value"></span>
+          </div>
+          <div class="detail">
+            <span class="detail-label">Reference set</span>
+            <span class="detail-value">FRIEND 2022, cycle, RER ≥1.0</span>
+          </div>
+          <div class="detail">
+            <span class="detail-label">Age method</span>
+            <span class="detail-value">Published 10-year band</span>
+          </div>
+        </div>
+
+        <div id="calculation-box" class="calculation-box"></div>
+        <div id="effort-box" class="effort-box"></div>
+        <div id="age-caution" class="age-caution" style="display:none"></div>
+
+        <div class="report-box">
+          <h2>Report sentence</h2>
+          <p id="report-sentence" class="report-sentence"></p>
+          <button id="copy-button" class="secondary" type="button">Copy sentence</button>
+          <span id="copy-status" class="copy-status" aria-live="polite"></span>
+        </div>
+      </section>
+
+      <footer class="method-note">
+        <p><strong>Method:</strong> the calculator uses the published age-decade, sex-specific cycle-ergometer values from Table 3. Between the 10th and 90th percentile thresholds, it estimates a percentile by linear interpolation between adjacent deciles. It reports values outside those bounds as below the 10th or above the 90th percentile rather than extrapolating.</p>
+        <p><strong>RER behavior:</strong> peak RER is used as an effort-quality flag. It does not switch the calculator to a different normative table at RER 1.10, avoiding a reference change caused solely by crossing that threshold.</p>
+        <p><strong>Reference:</strong> Kaminsky LA, Arena R, Myers J, et al. Updated Reference Standards for Cardiorespiratory Fitness Measured with Cardiopulmonary Exercise Testing: Data from FRIEND. <em>Mayo Clinic Proceedings</em>. 2022;97(2):285–293. <a href="https://doi.org/10.1016/j.mayocp.2021.08.020" target="_blank" rel="noopener noreferrer">DOI: 10.1016/j.mayocp.2021.08.020</a>.</p>
+        <p><strong>Limitations:</strong> this is a reference calculator, not a determination that a test was maximal and not a diagnosis. The FRIEND cohort consisted of apparently healthy U.S. adults. Interpret the percentile with the full CPET pattern and clinical context.</p>
+      </footer>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    const PERCENTILES = [10, 20, 30, 40, 50, 60, 70, 80, 90];
+
+    // Table 3, 2022 FRIEND cycle-ergometer reference standards, RER >= 1.0.
+    // Each array is ordered from the 10th through the 90th percentile.
+    const FRIEND_CYCLE = {
+      male: {
+        "20-29": [28.8, 34.5, 37.4, 40.8, 44.0, 48.3, 52.8, 57.0, 62.2],
+        "30-39": [19.1, 22.6, 25.7, 27.9, 30.2, 31.6, 35.5, 39.0, 50.5],
+        "40-49": [19.8, 21.9, 23.8, 25.4, 27.4, 29.0, 31.4, 35.1, 41.9],
+        "50-59": [17.2, 20.2, 22.0, 23.1, 24.5, 26.3, 28.4, 31.6, 37.1],
+        "60-69": [14.7, 17.5, 19.1, 20.7, 21.7, 23.3, 24.5, 27.0, 31.4],
+        "70-79": [11.0, 14.7, 16.0, 17.1, 18.3, 19.4, 20.6, 22.6, 26.2],
+        "80-89": [8.4, 9.7, 11.1, 12.2, 13.2, 14.6, 16.2, 17.3, 18.7]
+      },
+      female: {
+        "20-29": [18.8, 21.9, 25.6, 28.9, 31.6, 34.3, 37.5, 40.9, 46.0],
+        "30-39": [15.0, 17.0, 18.6, 19.9, 21.6, 22.9, 24.5, 27.0, 32.0],
+        "40-49": [13.7, 15.4, 16.6, 17.9, 18.8, 20.3, 21.8, 23.5, 27.3],
+        "50-59": [13.0, 14.3, 15.2, 16.1, 16.9, 17.8, 18.9, 20.4, 22.4],
+        "60-69": [12.2, 13.4, 14.2, 15.0, 15.7, 16.4, 17.4, 18.5, 20.3],
+        "70-79": [10.7, 12.0, 12.9, 13.6, 14.5, 15.0, 15.9, 16.8, 18.0],
+        "80-89": [7.8, 8.7, 9.4, 10.1, 10.9, 11.3, 12.9, 14.3, 18.1]
+      }
+    };
+
+    const form = document.getElementById("calculator-form");
+    const resultSection = document.getElementById("result");
+    const errorMessage = document.getElementById("error-message");
+    const resultHeading = document.getElementById("result-heading");
+    const resultSubtitle = document.getElementById("result-subtitle");
+    const detailGroup = document.getElementById("detail-group");
+    const calculationBox = document.getElementById("calculation-box");
+    const effortBox = document.getElementById("effort-box");
+    const ageCaution = document.getElementById("age-caution");
+    const reportSentence = document.getElementById("report-sentence");
+    const copyButton = document.getElementById("copy-button");
+    const copyStatus = document.getElementById("copy-status");
+
+    function getAgeGroup(age) {
+      const lower = Math.floor(age / 10) * 10;
+      return `${lower}-${lower + 9}`;
+    }
+
+    function ordinal(number) {
+      const rounded = Math.round(number);
+      const mod100 = rounded % 100;
+      if (mod100 >= 11 && mod100 <= 13) return `${rounded}th`;
+      switch (rounded % 10) {
+        case 1: return `${rounded}st`;
+        case 2: return `${rounded}nd`;
+        case 3: return `${rounded}rd`;
+        default: return `${rounded}th`;
+      }
+    }
+
+    function interpolatePercentile(vo2, thresholds) {
+      const lowest = thresholds[0];
+      const highest = thresholds[thresholds.length - 1];
+
+      if (vo2 < lowest) {
+        return {
+          type: "below",
+          display: "Below the 10th percentile",
+          reportText: "below the 10th percentile",
+          numeric: null,
+          details: `Peak VO₂ ${vo2.toFixed(1)} mL/kg/min is below the published 10th-percentile threshold of ${lowest.toFixed(1)} mL/kg/min.`
+        };
+      }
+
+      if (vo2 > highest) {
+        return {
+          type: "above",
+          display: "Above the 90th percentile",
+          reportText: "above the 90th percentile",
+          numeric: null,
+          details: `Peak VO₂ ${vo2.toFixed(1)} mL/kg/min is above the published 90th-percentile threshold of ${highest.toFixed(1)} mL/kg/min.`
+        };
+      }
+
+      for (let i = 0; i < thresholds.length - 1; i += 1) {
+        const lowerVo2 = thresholds[i];
+        const upperVo2 = thresholds[i + 1];
+        const lowerPct = PERCENTILES[i];
+        const upperPct = PERCENTILES[i + 1];
+
+        if (vo2 >= lowerVo2 && vo2 <= upperVo2) {
+          const fraction = (vo2 - lowerVo2) / (upperVo2 - lowerVo2);
+          const percentile = lowerPct + fraction * (upperPct - lowerPct);
+          const rounded = Math.round(percentile);
+
+          return {
+            type: "number",
+            display: `Approximately the ${ordinal(rounded)} percentile`,
+            reportText: `approximately the ${ordinal(rounded)} percentile`,
+            numeric: percentile,
+            details: `Peak VO₂ ${vo2.toFixed(1)} lies between the ${ordinal(lowerPct)}-percentile value (${lowerVo2.toFixed(1)}) and the ${ordinal(upperPct)}-percentile value (${upperVo2.toFixed(1)} mL/kg/min). Linear interpolation gives ${percentile.toFixed(1)}.`
+          };
+        }
+      }
+
+      // This can occur only if the value is exactly equal to the top threshold.
+      return {
+        type: "number",
+        display: "Approximately the 90th percentile",
+        reportText: "approximately the 90th percentile",
+        numeric: 90,
+        details: `Peak VO₂ ${vo2.toFixed(1)} mL/kg/min equals the published 90th-percentile threshold.`
+      };
+    }
+
+    function effortInterpretation(rer) {
+      if (rer < 1.0) {
+        return {
+          className: "effort-low",
+          text: `Peak RER was ${rer.toFixed(2)}, below the FRIEND reference cohort inclusion criterion of 1.00. The percentile is descriptive and may underestimate maximal cardiorespiratory fitness if effort was submaximal.`
+        };
+      }
+
+      if (rer < 1.1) {
+        return {
+          className: "effort-mid",
+          text: `Peak RER was ${rer.toFixed(2)} and meets the FRIEND ≥1.00 effort inclusion criterion. The calculator uses the RER ≥1.0 reference table.`
+        };
+      }
+
+      return {
+        className: "effort-good",
+        text: `Peak RER was ${rer.toFixed(2)} and meets both commonly reported RER thresholds (≥1.00 and ≥1.10). The calculator still uses the fixed RER ≥1.0 reference table for consistency.`
+      };
+    }
+
+    function validateInputs(age, sex, vo2, rer) {
+      if (!Number.isInteger(age) || age < 20 || age > 89) {
+        return "Enter age as a whole number from 20 through 89 years.";
+      }
+      if (sex !== "female" && sex !== "male") {
+        return "Select female or male.";
+      }
+      if (!Number.isFinite(vo2) || vo2 <= 0 || vo2 > 100) {
+        return "Enter peak VO₂ as a positive number in mL/kg/min.";
+      }
+      if (!Number.isFinite(rer) || rer < 0.5 || rer > 2.0) {
+        return "Enter peak RER between 0.50 and 2.00.";
+      }
+      return "";
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      copyStatus.textContent = "";
+
+      const age = Number(document.getElementById("age").value);
+      const sex = document.getElementById("sex").value;
+      const vo2 = Number(document.getElementById("vo2").value);
+      const rer = Number(document.getElementById("rer").value);
+
+      const validationError = validateInputs(age, sex, vo2, rer);
+      if (validationError) {
+        errorMessage.textContent = validationError;
+        errorMessage.style.display = "block";
+        resultSection.style.display = "none";
+        return;
+      }
+
+      errorMessage.style.display = "none";
+      const ageGroup = getAgeGroup(age);
+      const thresholds = FRIEND_CYCLE[sex][ageGroup];
+      const percentileResult = interpolatePercentile(vo2, thresholds);
+      const effort = effortInterpretation(rer);
+      const sexNoun = sex === "female" ? "woman" : "man";
+
+      resultHeading.textContent = percentileResult.display;
+      resultSubtitle.textContent = `Peak VO₂ ${vo2.toFixed(1)} mL/kg/min for a ${age}-year-old ${sexNoun}.`;
+      detailGroup.textContent = `${sex === "female" ? "Women" : "Men"}, age ${ageGroup}`;
+      calculationBox.textContent = percentileResult.details;
+
+      effortBox.className = `effort-box ${effort.className}`;
+      effortBox.textContent = effort.text;
+
+      if (age >= 80) {
+        ageCaution.style.display = "block";
+        ageCaution.textContent = "Caution: the FRIEND cycle reference sample for ages 80–89 was small, particularly for women, so the percentile is less precise in this age band.";
+      } else {
+        ageCaution.style.display = "none";
+        ageCaution.textContent = "";
+      }
+
+      let sentence = `By 2022 FRIEND cycle-ergometer norms (RER ≥1.0 reference cohort), peak VO₂ corresponds to ${percentileResult.reportText} for age and sex.`;
+      if (rer < 1.0) {
+        sentence += ` Interpret cautiously because peak RER was ${rer.toFixed(2)}.`;
+      }
+      reportSentence.textContent = sentence;
+
+      resultSection.style.display = "block";
+      resultSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+
+    form.addEventListener("reset", () => {
+      errorMessage.style.display = "none";
+      errorMessage.textContent = "";
+      resultSection.style.display = "none";
+      copyStatus.textContent = "";
+    });
+
+    copyButton.addEventListener("click", async () => {
+      const text = reportSentence.textContent;
+      if (!text) return;
+
+      try {
+        await navigator.clipboard.writeText(text);
+        copyStatus.textContent = "Copied.";
+      } catch (error) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.setAttribute("readonly", "");
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+        copyStatus.textContent = "Copied.";
+      }
+    });
+  </script>
+</body>
+</html>
